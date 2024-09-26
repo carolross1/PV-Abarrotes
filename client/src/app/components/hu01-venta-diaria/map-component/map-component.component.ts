@@ -1,4 +1,3 @@
-// Asegúrate de importar los módulos necesarios
 import { Component, AfterViewInit, Input } from '@angular/core';
 declare var H: any;
 
@@ -12,8 +11,9 @@ export class MapComponent implements AfterViewInit {
   private map: any;
   private router: any;
   private ui: any;
+  private currentLocation: { lat: number, lng: number } | null = null; // Guardar la ubicación actual del usuario
 
-  @Input() direccion: string = ''; // Agregar propiedad para recibir la dirección
+  @Input() direccion: string = ''; // Propiedad para recibir la dirección
 
   constructor() {
     this.platform = new H.service.Platform({
@@ -42,20 +42,56 @@ export class MapComponent implements AfterViewInit {
         const clientLat = position.coords.latitude;
         const clientLng = position.coords.longitude;
         this.setMapCenter(clientLat, clientLng);
+        this.currentLocation = { lat: clientLat, lng: clientLng }; // Guardar la ubicación actual
       }, error => {
         console.error('Error obteniendo la geolocalización', error);
       });
     }
+
+    // Escuchar eventos de clic (tap) en el mapa para seleccionar nueva ubicación
+    this.map.addEventListener('tap', (evt: any) => {
+      const coord = this.map.screenToGeo(evt.currentPointer.viewportX, evt.currentPointer.viewportY);
+      
+      // Agregar un marcador en la nueva ubicación
+      this.addMarker(coord.lat, coord.lng);
+
+      // Dibujar línea desde la ubicación actual hasta la nueva ubicación seleccionada
+      if (this.currentLocation) {
+        this.drawLine(this.currentLocation.lat, this.currentLocation.lng, coord.lat, coord.lng);
+      }
+    });
   }
 
+  // Método para centrar el mapa en la ubicación especificada y agregar un marcador
   setMapCenter(lat: number, lng: number): void {
     const newCenter = { lat, lng };
     this.map.setCenter(newCenter);
     this.map.setZoom(14);
 
     // Agregar un marcador en la ubicación
-    const marker = new H.map.Marker(newCenter);
+    this.addMarker(lat, lng);
+  }
+
+  // Método para agregar un marcador en la ubicación seleccionada
+  addMarker(lat: number, lng: number): void {
+    // Limpiar otros marcadores si es necesario (opcional)
+    this.map.removeObjects(this.map.getObjects());
+
+    const marker = new H.map.Marker({ lat, lng });
     this.map.addObject(marker);
+  }
+
+  // Método para dibujar una línea entre dos puntos
+  drawLine(lat1: number, lng1: number, lat2: number, lng2: number): void {
+    const linestring = new H.geo.LineString();
+    linestring.pushPoint({ lat: lat1, lng: lng1 });
+    linestring.pushPoint({ lat: lat2, lng: lng2 });
+
+    const polyline = new H.map.Polyline(linestring, {
+      style: { strokeColor: 'green', lineWidth: 5 }
+    });
+
+    this.map.addObject(polyline);
   }
 
   calculateRouteToDireccion(): void {
