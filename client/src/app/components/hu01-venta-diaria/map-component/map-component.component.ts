@@ -1,4 +1,3 @@
-// Asegúrate de importar los módulos necesarios
 import { Component, AfterViewInit, Input } from '@angular/core';
 declare var H: any;
 
@@ -13,7 +12,7 @@ export class MapComponent implements AfterViewInit {
   private router: any;
   private ui: any;
 
-  @Input() direccion: string = ''; // Agregar propiedad para recibir la dirección
+  @Input() direccion: string = ''; // Propiedad para recibir la dirección
 
   constructor() {
     this.platform = new H.service.Platform({
@@ -23,12 +22,12 @@ export class MapComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Inicializar el mapa
+    // Inicializar el mapa con capas por defecto
     const defaultLayers = this.platform.createDefaultLayers();
     const mapContainer = document.getElementById('map');
     this.map = new H.Map(mapContainer, defaultLayers.vector.normal.map, {
       zoom: 14,
-      center: { lat: 0, lng: 0 }
+      center: { lat: 21.14778, lng: -100.93606 } // Centro inicial
     });
 
     // Permitir que el mapa sea interactivo
@@ -36,28 +35,22 @@ export class MapComponent implements AfterViewInit {
     const behavior = new H.mapevents.Behavior(mapEvents);
     this.ui = H.ui.UI.createDefault(this.map, defaultLayers);
 
-    // Obtener la ubicación del usuario
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const clientLat = position.coords.latitude;
-        const clientLng = position.coords.longitude;
-        this.setMapCenter(clientLat, clientLng);
-      }, error => {
-        console.error('Error obteniendo la geolocalización', error);
-      });
-    }
+    // Centrar el mapa y agregar un marcador en un punto específico
+    this.setMapCenter(21.14778, -100.93606); // Coordenadas del punto específico
   }
 
+  // Método para centrar el mapa y agregar un marcador
   setMapCenter(lat: number, lng: number): void {
     const newCenter = { lat, lng };
     this.map.setCenter(newCenter);
     this.map.setZoom(14);
 
-    // Agregar un marcador en la ubicación
+    // Agregar un marcador en la ubicación específica
     const marker = new H.map.Marker(newCenter);
     this.map.addObject(marker);
   }
 
+  // Método para calcular la ruta a la dirección especificada
   calculateRouteToDireccion(): void {
     // Verifica que la dirección no esté vacía
     if (!this.direccion) {
